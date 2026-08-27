@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRightLeft, RotateCcw, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useNEXSStore } from '@/lib/store';
 import { NexsLogo } from '@/components/ui/NexsLogo';
 import { ConfirmDialog } from '@/components/ui/Modal';
@@ -9,21 +9,11 @@ import { useToast } from '@/components/ui/Toast';
 
 export function NavbarTop() {
   const router = useRouter();
-  const { currentUser, pengajar, switchUser, resetAllData, logout } = useNEXSStore();
+  const { currentUser, logout } = useNEXSStore();
   const toast = useToast();
   const isAdmin = currentUser?.role === 'ADMIN';
 
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
-
-  const handleConfirmReset = () => {
-    resetAllData();
-    setIsResetConfirmOpen(false);
-    toast.success('Data Berhasil Direset', 'Semua data operasional dan absensi telah dikembalikan ke kondisi awal.');
-    setTimeout(() => {
-      window.location.reload();
-    }, 800);
-  };
 
   const handleConfirmLogout = () => {
     logout();
@@ -48,58 +38,27 @@ export function NavbarTop() {
           </div>
         </div>
 
-        {/* Right Actions: Role Switcher (Admin Only), Badge (Pengajar), Avatar & Logout */}
+        {/* Right Actions: Role Badge (Admin / Pengajar), Avatar & Logout */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Quick Role Switcher (ONLY for Administrator) */}
           {isAdmin ? (
-            <>
-              <div className="flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-xl border border-slate-200">
-                <div className="flex items-center gap-1 px-1 text-xs font-semibold text-slate-600">
-                  <ArrowRightLeft className="w-3.5 h-3.5 text-orange-600 shrink-0" />
-                  <span className="hidden md:inline">Mode:</span>
-                </div>
-                <select
-                  value="user-admin"
-                  onChange={(e) => {
-                    const targetVal = e.target.value;
-                    switchUser(targetVal);
-                    const targetName =
-                      targetVal === 'user-admin'
-                        ? 'Admin NEXS'
-                        : pengajar.find((p) => p.id === targetVal)?.name || 'Pengajar';
-                    toast.info('Role Dialihkan', `Sekarang melihat dashboard sebagai: ${targetName}`);
-                  }}
-                  className="rounded-lg border-0 bg-white px-2 py-1 text-xs font-bold text-slate-800 shadow-xs ring-1 ring-slate-200 focus:outline-hidden focus:ring-2 focus:ring-orange-500 max-w-[125px] sm:max-w-[180px] truncate cursor-pointer"
-                >
-                  <option value="user-admin">👑 Admin (Penuh)</option>
-                  <optgroup label="Simulasi Akun Pengajar">
-                    {pengajar.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        👨‍🏫 {p.name.replace(' Sensei', '')}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-              </div>
-
-              {/* Reset Demo Button (Admin only) */}
-              <button
-                onClick={() => setIsResetConfirmOpen(true)}
-                title="Reset Data Demo"
-                className="flex items-center justify-center p-1.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span className="hidden md:inline ml-1">Reset</span>
-              </button>
-            </>
+            /* Admin Role Badge (Static) */
+            <div className="flex items-center gap-1.5 bg-amber-50/90 px-2.5 py-1 rounded-xl border border-amber-200/90 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold text-amber-950 truncate max-w-[130px] sm:max-w-[200px]">
+                👑 {currentUser?.name || 'Administrator'}
+              </span>
+              <span className="hidden sm:inline-block text-[10px] font-bold text-amber-800 bg-amber-100/90 px-1.5 py-0.5 rounded-md border border-amber-200">
+                Admin
+              </span>
+            </div>
           ) : (
-            /* Pengajar Role Badge (Read-only, cannot switch) */
-            <div className="flex items-center gap-1.5 bg-indigo-50/80 px-2.5 py-1 rounded-xl border border-indigo-200">
+            /* Pengajar Role Badge (Static) */
+            <div className="flex items-center gap-1.5 bg-indigo-50/80 px-2.5 py-1 rounded-xl border border-indigo-200 shadow-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs font-bold text-indigo-950 truncate max-w-[130px] sm:max-w-[200px]">
                 👨‍🏫 {currentUser?.name}
               </span>
-              <span className="hidden sm:inline-block text-[10px] font-bold text-indigo-700 bg-indigo-100/80 px-1.5 py-0.5 rounded-md">
+              <span className="hidden sm:inline-block text-[10px] font-bold text-indigo-700 bg-indigo-100/80 px-1.5 py-0.5 rounded-md border border-indigo-200">
                 Pengajar
               </span>
             </div>
@@ -123,17 +82,6 @@ export function NavbarTop() {
           </button>
         </div>
       </header>
-
-      {/* Modern In-App Confirm Dialog for Reset */}
-      <ConfirmDialog
-        isOpen={isResetConfirmOpen}
-        onClose={() => setIsResetConfirmOpen(false)}
-        onConfirm={handleConfirmReset}
-        title="Reset Ulang Data Demo?"
-        message="Tindakan ini akan mengembalikan semua jadwal, data absensi, dan jurnal ke status awal bawaan sistem."
-        confirmLabel="Ya, Reset Data"
-        isDestructive
-      />
 
       {/* Modern In-App Confirm Dialog for Logout */}
       <ConfirmDialog
