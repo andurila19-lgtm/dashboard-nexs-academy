@@ -32,13 +32,17 @@ export function BottomNav() {
     { href: '/jurnal', label: 'Jurnal', icon: BookOpen },
   ];
 
-  const moreMenuItems = [
-    { href: '/master/pengajar', label: 'Master Pengajar', icon: Users },
-    { href: '/master/kelas', label: 'Master Kelas', icon: GraduationCap },
-    { href: '/master/siswa', label: 'Master Siswa', icon: UserCheck },
-    { href: '/master/ruangan', label: 'Master Ruangan', icon: DoorOpen },
-    { href: '/laporan/rekap', label: 'Rekap & Laporan', icon: BarChart3 },
-  ];
+  const moreMenuItems = isAdmin
+    ? [
+        { href: '/master/pengajar', label: 'Master Pengajar', icon: Users },
+        { href: '/master/kelas', label: 'Master Kelas', icon: GraduationCap },
+        { href: '/master/siswa', label: 'Master Siswa', icon: UserCheck },
+        { href: '/master/ruangan', label: 'Master Ruangan', icon: DoorOpen },
+        { href: '/laporan/rekap', label: 'Rekap & Laporan', icon: BarChart3 },
+      ]
+    : [
+        { href: '/laporan/rekap', label: 'Rekap & Slip Honor Saya', icon: BarChart3 },
+      ];
 
   const isMoreActive = moreMenuItems.some((item) => pathname.startsWith(item.href));
 

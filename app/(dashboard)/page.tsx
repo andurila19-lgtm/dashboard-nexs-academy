@@ -13,6 +13,9 @@ import {
   MapPin,
   CheckCircle,
   Sparkles,
+  MessageSquare,
+  FileText,
+  Send,
 } from 'lucide-react';
 import { StatCard } from '@/components/ui/StatCard';
 import {
@@ -21,8 +24,14 @@ import {
   JurnalStatusBadge,
 } from '@/components/ui/Badge';
 import { useNEXSStore } from '@/lib/store';
-import { JadwalInstance } from '@/lib/types';
+import { JadwalInstance, Pengajar } from '@/lib/types';
 import { JurnalFormModal } from '@/components/jurnal/JurnalFormModal';
+import { WhatsAppModal } from '@/components/whatsapp/WhatsAppModal';
+import { SlipHonorModal } from '@/components/payroll/SlipHonorModal';
+import {
+  createScheduleReminderMessage,
+  createDailyBroadcastMessage,
+} from '@/lib/whatsapp';
 import { useToast } from '@/components/ui/Toast';
 
 export default function DashboardPage() {
@@ -34,6 +43,7 @@ export default function DashboardPage() {
     ruangan,
     absensi,
     jurnal,
+    jadwalInstances,
     getStats,
     getTodaySchedule,
     startTeaching,
@@ -42,6 +52,18 @@ export default function DashboardPage() {
 
   const [selectedJadwalForJurnal, setSelectedJadwalForJurnal] =
     useState<JadwalInstance | null>(null);
+
+  // WhatsApp reminder states
+  const [waModalConfig, setWaModalConfig] = useState<{
+    isOpen: boolean;
+    recipientName: string;
+    recipientPhone?: string | null;
+    message: string;
+    title: string;
+  } | null>(null);
+
+  // Slip honor state for Pengajar quick view
+  const [isSlipModalOpen, setIsSlipModalOpen] = useState(false);
 
   const stats = getStats();
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -58,6 +80,78 @@ export default function DashboardPage() {
     finishTeaching(id);
     toast.info('Sesi Mengajar Selesai', 'Waktu selesai telah dicatat. Jangan lupa mengisi jurnal mengajar.');
   };
+
+  const handleSendWAReminder = (item: JadwalInstance) => {
+    const targetPengajar = pengajar.find((p) => p.id === item.pengajarId);
+    const targetKelas = kelas.find((k) => k.id === item.kelasId);
+    const targetRuangan = ruangan.find((r) => r.id === item.ruanganId);
+
+    if (!targetPengajar) return;
+
+    const message = createScheduleReminderMessage({
+      pengajarName: targetPengajar.name,
+      kelasNama: targetKelas?.nama || 'Kelas',
+      tanggal: item.tanggal,
+      hari: item.hari,
+      jamMulai: item.jamMulai,
+      jamSelesai: item.jamSelesai,
+      ruanganNama: targetRuangan?.nama || 'Ruangan Kelas',
+    });
+
+    setWaModalConfig({
+      isOpen: true,
+      recipientName: targetPengajar.name,
+      recipientPhone: targetPengajar.phone,
+      message,
+      title: `Kirim Pengingat Jadwal ke ${targetPengajar.name}`,
+    });
+  };
+
+  const handleBroadcastToday = () => {
+    if (todaySchedules.length === 0) {
+      toast.warning('Tidak Ada Jadwal', 'Tidak ada sesi mengajar hari ini untuk dibroadcast.');
+      return;
+    }
+
+    // Pick first teacher or consolidated summary
+    const firstTeacherId = todaySchedules[0].pengajarId;
+    const targetPengajar = pengajar.find((p) => p.id === firstTeacherId) || pengajar[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const teacherTodaySessions = todaySchedules
+      .filter((s) => s.pengajarId === targetPengajar.id)
+      .map((s) => ({
+        kelasNama: kelas.find((k) => k.id === s.kelasId)?.nama || 'Kelas',
+        jamMulai: s.jamMulai,
+        jamSelesai: s.jamSelesai,
+        ruanganNama: ruangan.find((r) => r.id === s.ruanganId)?.nama || 'Ruangan',
+      }));
+
+    const message = createDailyBroadcastMessage({
+      pengajarName: targetPengajar.name,
+      dateStr: todayStr,
+      sessions: teacherTodaySessions.length > 0 ? teacherTodaySessions : [
+        {
+          kelasNama: kelas.find((k) => k.id === todaySchedules[0].kelasId)?.nama || 'Kelas',
+          jamMulai: todaySchedules[0].jamMulai,
+          jamSelesai: todaySchedules[0].jamSelesai,
+          ruanganNama: ruangan.find((r) => r.id === todaySchedules[0].ruanganId)?.nama || 'Ruangan',
+        }
+      ],
+    });
+
+    setWaModalConfig({
+      isOpen: true,
+      recipientName: targetPengajar.name,
+      recipientPhone: targetPengajar.phone,
+      message,
+      title: `Broadcast Jadwal Hari Ini (${targetPengajar.name})`,
+    });
+  };
+
+  const currentPengajarObj = !isAdmin
+    ? pengajar.find((p) => p.id === (currentUser?.pengajarId || currentUser?.id)) || pengajar[0]
+    : null;
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -111,9 +205,35 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Pengajar Quick Action Banner (If role: Pengajar) */}
+      {!isAdmin && currentPengajarObj && (
+        <div className="bg-linear-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+              <Sparkles className="w-3 h-3 text-amber-300" />
+              <span>Portal Pengajar NEXS</span>
+            </span>
+            <h3 className="text-base sm:text-lg font-bold">
+              Konnichiwa, {currentPengajarObj.name}! 🌸
+            </h3>
+            <p className="text-xs text-indigo-200">
+              Cek kehadiran mengajar dan cetak slip honorarium bulan berjalan secara transparan.
+            </p>
+          </div>
+
+          <button
+            onClick={() => setIsSlipModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 active:scale-95 rounded-xl shadow-xs transition-all shrink-0"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Lihat Slip Honor Saya</span>
+          </button>
+        </div>
+      )}
+
       {/* Section: Jadwal Hari Ini */}
       <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
           <div>
             <h2 className="text-sm sm:text-base font-bold text-slate-900">
               Jadwal Hari Ini
@@ -128,9 +248,22 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="text-[11px] sm:text-xs text-slate-600 font-bold flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            {todaySchedules.length} Sesi
+          <div className="flex items-center gap-2">
+            {isAdmin && todaySchedules.length > 0 && (
+              <button
+                onClick={handleBroadcastToday}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors"
+                title="Kirim broadcast reminder jadwal ke pengajar hari ini"
+              >
+                <Send className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Broadcast WA Hari Ini</span>
+              </button>
+            )}
+
+            <div className="text-[11px] sm:text-xs text-slate-600 font-bold flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              {todaySchedules.length} Sesi
+            </div>
           </div>
         </div>
 
@@ -173,9 +306,21 @@ export default function DashboardPage() {
                         <Clock className="w-3.5 h-3.5" />
                         <span>{item.jamMulai} – {item.jamSelesai}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-slate-600 font-medium">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{targetRuangan?.nama || '—'}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 text-xs text-slate-600 font-medium">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{targetRuangan?.nama || '—'}</span>
+                        </div>
+
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleSendWAReminder(item)}
+                            title="Kirim Pengingat Jadwal via WhatsApp"
+                            className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-emerald-200/60"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -349,51 +494,64 @@ export default function DashboardPage() {
 
                         {/* Action buttons */}
                         <td className="px-4 py-3.5 whitespace-nowrap text-right">
-                          {item.status === 'AKTIF' && (
-                            <button
-                              onClick={() => handleStartTeaching(item.id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors"
-                            >
-                              <Play className="w-3.5 h-3.5 fill-current" />
-                              <span>Mulai Mengajar</span>
-                            </button>
-                          )}
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* WhatsApp reminder for Admin */}
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleSendWAReminder(item)}
+                                title="Kirim Pengingat Jadwal via WhatsApp"
+                                className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-emerald-200"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                              </button>
+                            )}
 
-                          {item.status === 'MENGAJAR' && (
-                            <button
-                              onClick={() => handleFinishTeaching(item.id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-xs transition-colors animate-pulse"
-                            >
-                              <Square className="w-3.5 h-3.5 fill-current" />
-                              <span>Selesai Mengajar</span>
-                            </button>
-                          )}
+                            {item.status === 'AKTIF' && (
+                              <button
+                                onClick={() => handleStartTeaching(item.id)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors"
+                              >
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                <span>Mulai Mengajar</span>
+                              </button>
+                            )}
 
-                          {item.status === 'SELESAI' && (
-                            <button
-                              onClick={() => setSelectedJadwalForJurnal(item)}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg shadow-xs transition-colors ${
-                                targetJurnal?.status === 'DIISI' ||
-                                targetJurnal?.status === 'DIREVIEW'
-                                  ? 'text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300'
-                                  : 'text-white bg-emerald-600 hover:bg-emerald-700'
-                              }`}
-                            >
-                              <FileEdit className="w-3.5 h-3.5" />
-                              <span>
-                                {targetJurnal?.status === 'DIISI' ||
-                                targetJurnal?.status === 'DIREVIEW'
-                                  ? 'Edit Jurnal'
-                                  : 'Isi Jurnal'}
+                            {item.status === 'MENGAJAR' && (
+                              <button
+                                onClick={() => handleFinishTeaching(item.id)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-xs transition-colors animate-pulse"
+                              >
+                                <Square className="w-3.5 h-3.5 fill-current" />
+                                <span>Selesai Mengajar</span>
+                              </button>
+                            )}
+
+                            {item.status === 'SELESAI' && (
+                              <button
+                                onClick={() => setSelectedJadwalForJurnal(item)}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg shadow-xs transition-colors ${
+                                  targetJurnal?.status === 'DIISI' ||
+                                  targetJurnal?.status === 'DIREVIEW'
+                                    ? 'text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300'
+                                    : 'text-white bg-emerald-600 hover:bg-emerald-700'
+                                }`}
+                              >
+                                <FileEdit className="w-3.5 h-3.5" />
+                                <span>
+                                  {targetJurnal?.status === 'DIISI' ||
+                                  targetJurnal?.status === 'DIREVIEW'
+                                    ? 'Edit Jurnal'
+                                    : 'Isi Jurnal'}
+                                </span>
+                              </button>
+                            )}
+
+                            {item.status === 'DIBATALKAN' && (
+                              <span className="text-xs text-slate-400 italic">
+                                Dibatalkan
                               </span>
-                            </button>
-                          )}
-
-                          {item.status === 'DIBATALKAN' && (
-                            <span className="text-xs text-slate-400 italic">
-                              Dibatalkan
-                            </span>
-                          )}
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -411,6 +569,32 @@ export default function DashboardPage() {
         onClose={() => setSelectedJadwalForJurnal(null)}
         jadwalInstance={selectedJadwalForJurnal}
       />
+
+      {/* WhatsApp Modal */}
+      {waModalConfig && (
+        <WhatsAppModal
+          isOpen={waModalConfig.isOpen}
+          onClose={() => setWaModalConfig(null)}
+          recipientName={waModalConfig.recipientName}
+          recipientPhone={waModalConfig.recipientPhone}
+          defaultMessage={waModalConfig.message}
+          title={waModalConfig.title}
+        />
+      )}
+
+      {/* Pengajar Self-Service Slip Honor Modal */}
+      {!isAdmin && currentPengajarObj && isSlipModalOpen && (
+        <SlipHonorModal
+          isOpen={isSlipModalOpen}
+          onClose={() => setIsSlipModalOpen(false)}
+          pengajar={currentPengajarObj}
+          kelasList={kelas}
+          jadwalInstances={jadwalInstances}
+          absensiList={absensi}
+          jurnalList={jurnal}
+          isAdmin={false}
+        />
+      )}
     </div>
   );
 }

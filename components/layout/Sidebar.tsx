@@ -70,6 +70,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { href: '/jurnal', label: 'Jurnal Saya', icon: BookOpen },
       ],
     },
+    {
+      title: 'LAPORAN & HONOR',
+      items: [
+        { href: '/laporan/rekap', label: 'Rekap & Slip Honor Saya', icon: BarChart3 },
+      ],
+    },
   ];
 
   const menuSections = isAdmin ? adminMenu : pengajarMenu;

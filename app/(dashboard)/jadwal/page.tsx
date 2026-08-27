@@ -20,11 +20,14 @@ import {
   CheckCircle,
   XCircle,
   Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { JadwalStatusBadge } from '@/components/ui/Badge';
 import { useNEXSStore } from '@/lib/store';
 import { JadwalPattern, JadwalInstance, JadwalConflict } from '@/lib/types';
+import { WhatsAppModal } from '@/components/whatsapp/WhatsAppModal';
+import { createScheduleReminderMessage } from '@/lib/whatsapp';
 import { useToast } from '@/components/ui/Toast';
 
 const HARI_OPTIONS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
@@ -82,6 +85,39 @@ export default function JadwalPage() {
   const [reassignTarget, setReassignTarget] = useState<JadwalInstance | null>(null);
   const [newPengajarForReassign, setNewPengajarForReassign] = useState('');
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+  const [waModalConfig, setWaModalConfig] = useState<{
+    isOpen: boolean;
+    recipientName: string;
+    recipientPhone?: string | null;
+    message: string;
+    title: string;
+  } | null>(null);
+
+  const handleSendWAReminder = (item: JadwalInstance) => {
+    const targetPengajar = pengajar.find((p) => p.id === item.pengajarId);
+    const targetKelas = kelas.find((k) => k.id === item.kelasId);
+    const targetRuangan = ruangan.find((r) => r.id === item.ruanganId);
+
+    if (!targetPengajar) return;
+
+    const message = createScheduleReminderMessage({
+      pengajarName: targetPengajar.name,
+      kelasNama: targetKelas?.nama || 'Kelas',
+      tanggal: item.tanggal,
+      hari: item.hari,
+      jamMulai: item.jamMulai,
+      jamSelesai: item.jamSelesai,
+      ruanganNama: targetRuangan?.nama || 'Ruangan Kelas',
+    });
+
+    setWaModalConfig({
+      isOpen: true,
+      recipientName: targetPengajar.name,
+      recipientPhone: targetPengajar.phone,
+      message,
+      title: `Kirim Pengingat Jadwal (${targetPengajar.name})`,
+    });
+  };
 
   // Filter instances based on permissions and filters
   const filteredInstances = useMemo(() => {
@@ -456,20 +492,29 @@ export default function JadwalPage() {
                         <JadwalStatusBadge status={item.status} />
 
                         {isAdmin && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            {/* WhatsApp Reminder Button */}
+                            <button
+                              onClick={() => handleSendWAReminder(item)}
+                              title="Kirim Pengingat Jadwal via WhatsApp"
+                              className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-lg border border-emerald-200"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" />
+                            </button>
+
                             <button
                               onClick={() => {
                                 setReassignTarget(item);
                                 setNewPengajarForReassign(item.pengajarId);
                               }}
-                              className="px-2.5 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg"
+                              className="px-2 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg"
                             >
                               Ganti Sensei
                             </button>
                             {item.status !== 'DIBATALKAN' && item.status !== 'SELESAI' && (
                               <button
                                 onClick={() => setCancelTargetId(item.id)}
-                                className="px-2.5 py-1 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg"
+                                className="px-2 py-1 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg"
                               >
                                 Batalkan
                               </button>
@@ -552,6 +597,15 @@ export default function JadwalPage() {
                           {isAdmin && (
                             <td className="px-6 py-4 whitespace-nowrap text-right">
                               <div className="flex items-center justify-end gap-1.5">
+                                {/* WhatsApp Reminder Button */}
+                                <button
+                                  onClick={() => handleSendWAReminder(item)}
+                                  title="Kirim Pengingat Jadwal via WhatsApp"
+                                  className="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors border border-emerald-200"
+                                >
+                                  <MessageSquare className="w-4 h-4" />
+                                </button>
+
                                 {/* Reassign Pengajar */}
                                 <button
                                   onClick={() => {
@@ -905,6 +959,18 @@ export default function JadwalPage() {
         confirmLabel="Ya, Batalkan Sesi"
         isDestructive
       />
+
+      {/* WhatsApp Modal for Reminder */}
+      {waModalConfig && (
+        <WhatsAppModal
+          isOpen={waModalConfig.isOpen}
+          onClose={() => setWaModalConfig(null)}
+          recipientName={waModalConfig.recipientName}
+          recipientPhone={waModalConfig.recipientPhone}
+          defaultMessage={waModalConfig.message}
+          title={waModalConfig.title}
+        />
+      )}
     </div>
   );
 }

@@ -92,3 +92,93 @@ body {
 .animate-toast-progress {
   animation: toastProgress linear forwards;
 }
+
+/* Print Optimization for Multi-Page Slip Honor & Official Documents */
+@media print {
+  html, body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  /* Hide navigation, top navbar, modals backdrop, buttons and all UI chrome */
+  header,
+  aside,
+  nav,
+  .no-print,
+  button,
+  .toast-container,
+  .fixed.inset-0.bg-slate-900\/50,
+  [role="dialog"] > div:first-child {
+    display: none !important;
+  }
+
+  /* Reset layout constraints and overflow from all ancestor wrappers so multi-page flow works */
+  main,
+  .lg\:pl-64,
+  .fixed,
+  .relative,
+  [class*="overflow-y-auto"],
+  [class*="max-h-"] {
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* Print container styling - allows multiple pages seamlessly */
+  #slip-honor-printable,
+  .slip-honor-container {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Table multi-page flow */
+  table {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    width: 100% !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Keep summary & signatures together */
+  .slip-summary-block,
+  .slip-signature-block {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm 15mm 15mm;
+  }
+}

@@ -48,47 +48,62 @@ export function NavbarTop() {
           </div>
         </div>
 
-        {/* Right Actions: Role Switcher, Reset, Avatar & Logout */}
+        {/* Right Actions: Role Switcher (Admin Only), Badge (Pengajar), Avatar & Logout */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Quick Role Switcher */}
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-xl border border-slate-200">
-            <div className="flex items-center gap-1 px-1 text-xs font-semibold text-slate-600">
-              <ArrowRightLeft className="w-3.5 h-3.5 text-orange-600 shrink-0" />
-              <span className="hidden md:inline">Role:</span>
-            </div>
-            <select
-              value={isAdmin ? 'user-admin' : currentUser?.id || 'p-1'}
-              onChange={(e) => {
-                const targetVal = e.target.value;
-                switchUser(targetVal);
-                const targetName =
-                  targetVal === 'user-admin'
-                    ? 'Admin NEXS'
-                    : pengajar.find((p) => p.id === targetVal)?.name || 'Pengajar';
-                toast.info('Role Dialihkan', `Sekarang melihat dashboard sebagai: ${targetName}`);
-              }}
-              className="rounded-lg border-0 bg-white px-2 py-1 text-xs font-bold text-slate-800 shadow-xs ring-1 ring-slate-200 focus:outline-hidden focus:ring-2 focus:ring-orange-500 max-w-[125px] sm:max-w-[180px] truncate cursor-pointer"
-            >
-              <option value="user-admin">Admin</option>
-              <optgroup label="Akun Pengajar">
-                {pengajar.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    👨‍🏫 {p.name.replace(' Sensei', '')}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-          </div>
+          {/* Quick Role Switcher (ONLY for Administrator) */}
+          {isAdmin ? (
+            <>
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-1 px-1 text-xs font-semibold text-slate-600">
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+                  <span className="hidden md:inline">Mode:</span>
+                </div>
+                <select
+                  value="user-admin"
+                  onChange={(e) => {
+                    const targetVal = e.target.value;
+                    switchUser(targetVal);
+                    const targetName =
+                      targetVal === 'user-admin'
+                        ? 'Admin NEXS'
+                        : pengajar.find((p) => p.id === targetVal)?.name || 'Pengajar';
+                    toast.info('Role Dialihkan', `Sekarang melihat dashboard sebagai: ${targetName}`);
+                  }}
+                  className="rounded-lg border-0 bg-white px-2 py-1 text-xs font-bold text-slate-800 shadow-xs ring-1 ring-slate-200 focus:outline-hidden focus:ring-2 focus:ring-orange-500 max-w-[125px] sm:max-w-[180px] truncate cursor-pointer"
+                >
+                  <option value="user-admin">👑 Admin (Penuh)</option>
+                  <optgroup label="Simulasi Akun Pengajar">
+                    {pengajar.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        👨‍🏫 {p.name.replace(' Sensei', '')}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
 
-          {/* Reset Demo Button */}
-          <button
-            onClick={() => setIsResetConfirmOpen(true)}
-            title="Reset Data Demo"
-            className="flex items-center justify-center p-1.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span className="hidden md:inline ml-1">Reset</span>
-          </button>
+              {/* Reset Demo Button (Admin only) */}
+              <button
+                onClick={() => setIsResetConfirmOpen(true)}
+                title="Reset Data Demo"
+                className="flex items-center justify-center p-1.5 sm:px-2.5 sm:py-1 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden md:inline ml-1">Reset</span>
+              </button>
+            </>
+          ) : (
+            /* Pengajar Role Badge (Read-only, cannot switch) */
+            <div className="flex items-center gap-1.5 bg-indigo-50/80 px-2.5 py-1 rounded-xl border border-indigo-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold text-indigo-950 truncate max-w-[130px] sm:max-w-[200px]">
+                👨‍🏫 {currentUser?.name}
+              </span>
+              <span className="hidden sm:inline-block text-[10px] font-bold text-indigo-700 bg-indigo-100/80 px-1.5 py-0.5 rounded-md">
+                Pengajar
+              </span>
+            </div>
+          )}
 
           {/* User Initials Avatar */}
           <div className="flex items-center gap-2 pl-0.5">

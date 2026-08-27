@@ -1,10 +1,21 @@
 'use client';
 import React, { useState, useMemo } from 'react';
-import { Users, Plus, Search, Edit2, Trash2, Mail, Phone, CheckCircle } from 'lucide-react';
+import {
+  Users,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  Mail,
+  Phone,
+  CheckCircle,
+  MessageSquare,
+} from 'lucide-react';
 import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { StatusAktifBadge } from '@/components/ui/Badge';
 import { useNEXSStore } from '@/lib/store';
 import { Pengajar, StatusAktif } from '@/lib/types';
+import { WhatsAppModal } from '@/components/whatsapp/WhatsAppModal';
 import { useToast } from '@/components/ui/Toast';
 
 export default function MasterPengajarPage() {
@@ -15,6 +26,9 @@ export default function MasterPengajarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Pengajar | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
+  // WhatsApp Modal state
+  const [waTarget, setWaTarget] = useState<Pengajar | null>(null);
 
   // Form State
   const [name, setName] = useState('');
@@ -73,7 +87,7 @@ export default function MasterPengajarPage() {
             Master Data Pengajar
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Daftar pengajar / sensei yang terdaftar di NEXS.
+            Daftar pengajar / sensei yang terdaftar di NEXS Academy.
           </p>
         </div>
 
@@ -110,7 +124,7 @@ export default function MasterPengajarPage() {
             <thead className="bg-slate-50 border-b border-slate-200/80 text-xs font-semibold text-slate-500 uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-3.5">Pengajar</th>
-                <th className="px-6 py-3.5">Kontak</th>
+                <th className="px-6 py-3.5">Kontak WhatsApp</th>
                 <th className="px-6 py-3.5">Status</th>
                 <th className="px-6 py-3.5 text-right">Aksi</th>
               </tr>
@@ -131,9 +145,20 @@ export default function MasterPengajarPage() {
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
-                    <div className="flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{item.phone || '—'}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{item.phone || '—'}</span>
+                      </div>
+                      {item.phone && (
+                        <button
+                          onClick={() => setWaTarget(item)}
+                          title="Chat via WhatsApp"
+                          className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-emerald-200"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
 
@@ -263,6 +288,18 @@ export default function MasterPengajarPage() {
         confirmLabel="Ya, Hapus"
         isDestructive
       />
+
+      {/* Direct WhatsApp Modal */}
+      {waTarget && (
+        <WhatsAppModal
+          isOpen={!!waTarget}
+          onClose={() => setWaTarget(null)}
+          recipientName={waTarget.name}
+          recipientPhone={waTarget.phone}
+          defaultMessage={`Halo ${waTarget.name},\n\nSemoga sehat selalu. Ada informasi terbaru terkait jadwal dan kegiatan akademik di NEXS Academy yang ingin kami sampaikan.\n\nTerima kasih! 🙏`}
+          title={`Kirim Pesan WhatsApp (${waTarget.name})`}
+        />
+      )}
     </div>
   );
 }
