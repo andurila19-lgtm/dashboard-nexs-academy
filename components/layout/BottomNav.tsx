@@ -101,6 +101,27 @@ export function BottomNav() {
                   </Link>
                 );
               })}
+
+              {/* Logout button in mobile drawer */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Keluar dari akun?')) {
+                      useNEXSStore.getState().logout();
+                      window.location.href = '/login';
+                    }
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white text-rose-600 shadow-xs">
+                      <X className="w-4.5 h-4.5" />
+                    </div>
+                    <span>Keluar Akun (Logout)</span>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,17 +1,20 @@
 'use client';
 import React, { useState } from 'react';
-import { ArrowRightLeft, RotateCcw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowRightLeft, RotateCcw, LogOut } from 'lucide-react';
 import { useNEXSStore } from '@/lib/store';
 import { NexsLogo } from '@/components/ui/NexsLogo';
 import { ConfirmDialog } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 
 export function NavbarTop() {
-  const { currentUser, pengajar, switchUser, resetAllData } = useNEXSStore();
+  const router = useRouter();
+  const { currentUser, pengajar, switchUser, resetAllData, logout } = useNEXSStore();
   const toast = useToast();
   const isAdmin = currentUser?.role === 'ADMIN';
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
   const handleConfirmReset = () => {
     resetAllData();
@@ -20,6 +23,13 @@ export function NavbarTop() {
     setTimeout(() => {
       window.location.reload();
     }, 800);
+  };
+
+  const handleConfirmLogout = () => {
+    logout();
+    setIsLogoutConfirmOpen(false);
+    toast.info('Logout Berhasil', 'Sesi Anda telah diakhiri.');
+    router.replace('/login');
   };
 
   return (
@@ -38,7 +48,7 @@ export function NavbarTop() {
           </div>
         </div>
 
-        {/* Right Actions: Role Switcher & User Avatar */}
+        {/* Right Actions: Role Switcher, Reset, Avatar & Logout */}
         <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Quick Role Switcher */}
           <div className="flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-xl border border-slate-200">
@@ -86,6 +96,16 @@ export function NavbarTop() {
               {currentUser?.name?.slice(0, 2).toUpperCase() || 'AD'}
             </div>
           </div>
+
+          {/* Logout Button */}
+          <button
+            onClick={() => setIsLogoutConfirmOpen(true)}
+            title="Keluar dari Akun"
+            className="flex items-center justify-center p-1.5 sm:px-2.5 sm:py-1 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors border border-rose-200"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden md:inline ml-1">Keluar</span>
+          </button>
         </div>
       </header>
 
@@ -97,6 +117,17 @@ export function NavbarTop() {
         title="Reset Ulang Data Demo?"
         message="Tindakan ini akan mengembalikan semua jadwal, data absensi, dan jurnal ke status awal bawaan sistem."
         confirmLabel="Ya, Reset Data"
+        isDestructive
+      />
+
+      {/* Modern In-App Confirm Dialog for Logout */}
+      <ConfirmDialog
+        isOpen={isLogoutConfirmOpen}
+        onClose={() => setIsLogoutConfirmOpen(false)}
+        onConfirm={handleConfirmLogout}
+        title="Keluar dari Akun?"
+        message="Sesi login Anda saat ini akan diakhiri. Anda perlu memasukkan email dan kata sandi kembali untuk masuk."
+        confirmLabel="Ya, Keluar"
         isDestructive
       />
     </>

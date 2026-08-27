@@ -13,6 +13,7 @@ import {
   DoorOpen,
   BarChart3,
   ChevronRight,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNEXSStore } from '@/lib/store';
@@ -25,7 +26,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { currentUser } = useNEXSStore();
+  const { currentUser, logout } = useNEXSStore();
   const isAdmin = currentUser?.role === 'ADMIN';
 
   const adminMenu = [
@@ -133,8 +134,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           ))}
         </div>
 
-        {/* Footer info */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40">
+        {/* Footer info & Logout */}
+        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 space-y-3">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800 text-slate-200 font-bold text-xs border border-slate-700">
               {currentUser?.name?.slice(0, 2).toUpperCase() || 'US'}
@@ -146,6 +147,19 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </p>
             </div>
           </div>
+
+          <button
+            onClick={() => {
+              if (confirm('Keluar dari akun?')) {
+                logout();
+                window.location.href = '/login';
+              }
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 rounded-lg transition-colors border border-rose-500/20"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Keluar Akun (Logout)</span>
+          </button>
         </div>
       </aside>
     </>

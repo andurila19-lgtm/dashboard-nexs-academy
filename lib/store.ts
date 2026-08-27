@@ -251,7 +251,7 @@ function getInitialData() {
   });
 
   return {
-    currentUser: adminUser,
+    currentUser: null as User | null,
     pengajar: pengajarList,
     kelas: kelasList,
     siswa: siswaList,
