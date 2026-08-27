@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32">
+  <defs>
+    <!-- Left Leaf Gradient: Vibrant Gold to Orange -->
+    <linearGradient id="gold-fav" x1="0.1" y1="0.0" x2="0.9" y2="1.0">
+      <stop offset="0%" stop-color="#FCD34D" />
+      <stop offset="30%" stop-color="#F59E0B" />
+      <stop offset="75%" stop-color="#EA580C" />
+      <stop offset="100%" stop-color="#C2410C" />
+    </linearGradient>
+
+    <!-- Right Leaf Gradient: Vivid Orange to Dark Crimson Red -->
+    <linearGradient id="red-fav" x1="0.1" y1="0.0" x2="0.9" y2="1.0">
+      <stop offset="0%" stop-color="#FB923C" />
+      <stop offset="40%" stop-color="#EA580C" />
+      <stop offset="80%" stop-color="#DC2626" />
+      <stop offset="100%" stop-color="#991B1B" />
+    </linearGradient>
+
+    <!-- Middle Overlap Shadow -->
+    <linearGradient id="shadow-fav" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.45" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Left 'N' Leaf -->
+  <path d="M 28 8 C 16 8 8 20 14 36 L 34 82 C 40 96 56 100 66 94 L 68 86 C 58 76 46 54 40 38 L 32 20 C 30 12 34 8 28 8 Z" fill="url(#gold-fav)" />
+  <rect x="12" y="14" width="34" height="74" rx="17" transform="rotate(18 12 14)" fill="url(#gold-fav)" />
+
+  <!-- Right 'N' Leaf -->
+  <rect x="42" y="10" width="34" height="74" rx="17" transform="rotate(18 42 10)" fill="url(#red-fav)" />
+
+  <!-- Overlapping Inner Crease Shadow -->
+  <path d="M 38 42 C 44 28 58 28 66 40 L 48 88 C 42 96 34 94 30 88 Z" fill="url(#shadow-fav)" />
+</svg>

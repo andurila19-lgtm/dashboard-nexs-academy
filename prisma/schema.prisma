@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  PENGAJAR
+}
+
+enum StatusAktif {
+  AKTIF
+  NONAKTIF
+}
+
+enum TipeJadwal {
+  BERULANG
+  SEKALI
+}
+
+enum StatusJadwal {
+  AKTIF
+  MENGAJAR
+  SELESAI
+  DIBATALKAN
+}
+
+enum StatusAbsensi {
+  BELUM_MULAI
+  MENGAJAR
+  SELESAI
+  TERLAMBAT
+  TIDAK_HADIR
+  DIBATALKAN
+}
+
+enum StatusJurnal {
+  BELUM_DIISI
+  DRAFT
+  DIISI
+  DIREVIEW
+}
+
+model User {
+  id         String    @id @default(uuid())
+  name       String
+  email      String    @unique
+  password   String
+  role       Role      @default(PENGAJAR)
+  phone      String?
+  status     StatusAktif @default(AKTIF)
+  pengajarId String?   @unique
+  pengajar   Pengajar? @relation(fields: [pengajarId], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Pengajar {
+  id             String           @id @default(uuid())
+  name           String
+  email          String           @unique
+  phone          String?
+  status         StatusAktif      @default(AKTIF)
+  user           User?
+  jadwalPatterns JadwalPattern[]
+  jadwalInstances JadwalInstance[]
+  absensiRecords Absensi[]
+  jurnalRecords  Jurnal[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Kelas {
+  id             String           @id @default(uuid())
+  nama           String           @unique
+  program        String
+  level          String
+  kapasitas      Int              @default(15)
+  status         StatusAktif      @default(AKTIF)
+  siswa          Siswa[]
+  jadwalPatterns JadwalPattern[]
+  jadwalInstances JadwalInstance[]
+  absensiRecords Absensi[]
+  jurnalRecords  Jurnal[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Siswa {
+  id        String      @id @default(uuid())
+  nama      String
+  email     String?
+  phone     String?
+  status    StatusAktif @default(AKTIF)
+  kelasId   String?
+  kelas     Kelas?      @relation(fields: [kelasId], references: [id], onDelete: SetNull)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Ruangan {
+  id             String           @id @default(uuid())
+  nama           String           @unique
+  kapasitas      Int              @default(20)
+  status         StatusAktif      @default(AKTIF)
+  jadwalPatterns JadwalPattern[]
+  jadwalInstances JadwalInstance[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model JadwalPattern {
+  id             String           @id @default(uuid())
+  pengajarId     String
+  pengajar       Pengajar         @relation(fields: [pengajarId], references: [id], onDelete: Cascade)
+  kelasId        String
+  kelas          Kelas            @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  ruanganId      String
+  ruangan        Ruangan          @relation(fields: [ruanganId], references: [id], onDelete: Cascade)
+  hari           String           // JSON string of selected days: ["Senin", "Rabu"]
+  jamMulai       String           // "08:00"
+  jamSelesai     String           // "10:00"
+  tanggalMulai   String           // "2026-09-01"
+  tanggalSelesai String           // "2026-11-30"
+  tipe           TipeJadwal       @default(BERULANG)
+  status         StatusAktif      @default(AKTIF)
+  instances      JadwalInstance[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model JadwalInstance {
+  id             String           @id @default(uuid())
+  patternId      String?
+  pattern        JadwalPattern?   @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  pengajarId     String
+  pengajar       Pengajar         @relation(fields: [pengajarId], references: [id], onDelete: Cascade)
+  kelasId        String
+  kelas          Kelas            @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  ruanganId      String
+  ruangan        Ruangan          @relation(fields: [ruanganId], references: [id], onDelete: Cascade)
+  tanggal        String           // "2026-09-01"
+  hari           String           // "Senin"
+  jamMulai       String           // "08:00"
+  jamSelesai     String           // "10:00"
+  status         StatusJadwal     @default(AKTIF)
+  absensi        Absensi?
+  jurnal         Jurnal?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([tanggal])
+  @@index([pengajarId])
+  @@index([kelasId])
+}
+
+model Absensi {
+  id               String          @id @default(uuid())
+  jadwalInstanceId String          @unique
+  jadwalInstance   JadwalInstance  @relation(fields: [jadwalInstanceId], references: [id], onDelete: Cascade)
+  pengajarId       String
+  pengajar         Pengajar        @relation(fields: [pengajarId], references: [id], onDelete: Cascade)
+  kelasId          String
+  kelas            Kelas           @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  tanggal          String          // "2026-09-01"
+  jamJadwalMulai   String          // "08:00"
+  jamJadwalSelesai String          // "10:00"
+  jamMulaiAktual   String?         // "08:05"
+  jamSelesaiAktual String?         // "10:00"
+  durasi           Int?            // in minutes
+  status           StatusAbsensi   @default(BELUM_MULAI)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([tanggal])
+  @@index([pengajarId])
+}
+
+model Jurnal {
+  id               String          @id @default(uuid())
+  jadwalInstanceId String          @unique
+  jadwalInstance   JadwalInstance  @relation(fields: [jadwalInstanceId], references: [id], onDelete: Cascade)
+  pengajarId       String
+  pengajar         Pengajar        @relation(fields: [pengajarId], references: [id], onDelete: Cascade)
+  kelasId          String
+  kelas            Kelas           @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  tanggal          String          // "2026-09-01"
+  materi           String
+  aktivitas        String
+  jumlahSiswaHadir Int             @default(0)
+  tugas            String?
+  catatan          String?
+  status           StatusJurnal    @default(BELUM_DIISI)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([tanggal])
+  @@index([pengajarId])
+}
